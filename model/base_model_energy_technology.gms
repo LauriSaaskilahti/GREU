@@ -9,22 +9,31 @@ $IMPORT base_model.gms
 d1switch_energy_technology[t] = 1;
 d1switch_integrate_energy_technology[t] = 0;
 
-# Set share parameters
+# Set share parameters (Kan dette kalibreres i kalibreringsligninger?)
 jES.l[es,i,t]$(qES.l[es,i,t] and qREes.l[es,i,t]) = qES.l[es,i,t]/qREes.l[es,i,t];
 jpTK.l[i,t]$(d1pTK[i,t] and d1K_k_i['iM',i,t]) = pTK.l[i,t]/pK_k_i.l['iM',i,t];
 
 # Supply Curve Visualization
-$import premodel_energy_technology.gms
-$import energy_price_partial.gms
+# Laver en energy-technology model med udvidede dimensioner. 
+# Kan denne laves i et separat modul - måske i energy_technology.gms?
+$import premodel_energy_technology.gms 
+
+# Laver en model med ligningerne fra energy_demand_prices og energy_and_emissions_taxes 
+# OG importerer dummies_new_energy_use.gms
+$import energy_price_partial.gms 
 # execute_unload 'Output/pre_energy_price_partial.gdx';
 $import Supply_curve_energy_technology.gms;
 
 # Solve partial energy technology model
+# I shock_CO2_tax.gms løses først en partiel model af energy_technology_partial_equations. 
+# Jeg er ikke sikker på, om det er nødvendigt, men erfaringen siger, at det gør systemet mere robust.
+# Den partielle model laves i energy_technology.gms
 @add_exist_dummies_to_model(energy_technology_partial_equations);
 # $FIX all_variables; $UNFIX energy_technology_partial_endogenous;
 # Solve energy_technology_partial_equations using CNS;
 
-@add_exist_dummies_to_model(main);
+# Jeg er ikke sikker på, hvorfor dette er med...
+@add_exist_dummies_to_model(main); # Burde kunne fjernes
 $FIX all_variables; $UNFIX main_endogenous;
 # execute_unload 'Output/pre_calibration_energy_technology.gdx';
 solve main using CNS;
@@ -38,6 +47,7 @@ d1switch_energy_technology[t] = 1;
 d1switch_integrate_energy_technology[t] = 1;
 
 # Create baseline values for the energy technology model
+# Lige nu er nogle af integrationsligningerne defineret som absolutte forskelle mellem shock og baseline.
 $import create_baseline_values.gms;
 
 $FIX all_variables; $UNFIX main_endogenous;
@@ -45,6 +55,7 @@ solve main using CNS;
 execute_unload 'Output/calibration_energy_technology_integrated.gdx';
 
 # We switch jqESE and uREa when starting to shock the model (could be made more elegant)
+# Dette kan måske indgå i kalibreringsligninger?
 $GROUP main_endogenous
   main_endogenous
   uREa$(d1qES_e[es,e_a,i,t] and d1pREa[es,e_a,i,t]), -jqESE$(d1qES_e[es,e,i,t] and d1pREa[es,e,i,t])
