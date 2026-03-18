@@ -27,8 +27,9 @@ set_time_periods(%first_data_year%, %terminal_year%);
 # This function imports modules at different stages of model construction
 # - variables: Import variable declarations
 # - equations: Import equation definitions  
-# - calibration: Import calibration-specific logic
 # - exogenous_values: Import exogenous data
+# - starting_values: Import starting values for calibration
+# - calibration: Import calibration-specific logic
 # - tests: Import test procedures
 
 #A zero in the second column means that the equations and endogenous variables of the module in question are neither 
@@ -117,6 +118,8 @@ main.optfile=1;
 # CALIBRATION
 # =============================================================================
 d1switch_energy_technology[t] = 0; # We turn the energy technology model off while calibrating the CGE-model
+
+@import_from_modules("starting_values")
 
 $Group calibration_endogenous ;
 @import_from_modules("calibration")
